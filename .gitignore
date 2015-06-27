@@ -18,3 +18,7 @@ _build/
 # oasis generated files
 setup.data
 setup.log
+
+# Graph files
+*.gv
+*.svg
