@@ -19,6 +19,3 @@ _build/
 setup.data
 setup.log
 
-# Graph files
-*.gv
-*.svg
