@@ -1,5 +1,5 @@
 
-type tag
+type tag = private int
 type addr = private int
 
 type cell = private
