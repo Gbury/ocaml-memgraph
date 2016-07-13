@@ -34,14 +34,7 @@ let rec print_node h fmt t =
     print_edges fmt t
   end
 
-let entry_id =
-  let c = ref 0 in
-  (function () -> incr c; !c)
-
-let print_repr h fmt (name, t) =
-  let n = entry_id () in
-  Format.fprintf fmt "entry_%d [label=\"{ val : %s | %a}\" shape=\"record\" style=\"filled\" fillcolor=\"yellow\"];@\n"
-    n name print_cell t;
+let print_repr h fmt n (name, t) =
   match t with
   | Repr.Pointer b ->
     let block = Repr.follow b in
@@ -49,11 +42,20 @@ let print_repr h fmt (name, t) =
     print_node h fmt block
   | _ -> ()
 
+let print_roots fmt l =
+  let aux fmt l =
+    List.iteri (fun i (name, t) ->
+        Format.fprintf fmt "entry_%d [label=\"{ val : %s | %a}\" shape=\"record\" style=\"filled\" fillcolor=\"yellow\"];@\n"
+          i name print_cell t) l
+  in
+  Format.fprintf fmt "{rank=source;@\n%a@\n}" aux l
+
 let print_list fmt l =
-  let h = Hashtbl.create 42 in
-  Format.fprintf fmt "digraph g {@\n";
-  List.iter (print_repr h fmt) l;
-  Format.fprintf fmt "}@."
+  let print_reprs fmt l =
+    let h = Hashtbl.create 42 in
+    List.iteri (print_repr h fmt) l
+  in
+  Format.fprintf fmt "digraph g {@\n%a\n%a\n}@." print_roots l print_reprs l
 
 let to_file name l =
   let fd = Unix.openfile name [ Unix.O_CREAT; Unix.O_RDWR; Unix.O_EXCL ] 0o640 in

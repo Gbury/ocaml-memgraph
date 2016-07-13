@@ -55,7 +55,9 @@ let rec mk_val addr v =
       [| String (Obj.obj v : string) |]
     else if tag = Obj.double_array_tag then
       (Array.init (Obj.size v) (fun i -> Double (Obj.double_field v i)))
-    else if tag <= 245 || tag = 248 then
+    else if tag <= 245 ||
+            tag = Obj.object_tag ||
+            tag = Obj.forward_tag then
       (Array.init (Obj.size v) (fun i -> mk (Obj.field v i)))
     else
       [| Abstract |]
