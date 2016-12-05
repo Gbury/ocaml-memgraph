@@ -22,9 +22,9 @@ let l_forced = Repr.repr l
 ;;
 (* Printing *)
 Dot.to_file "temp.gv" [
-  "lazy_2", l_repr;
-  "lazy_val", l_val;
-  "lazy_forced", l_forced;
+  "lazy: 1 + 1", l_repr;
+  "lazy_forced", l_val;
+  "lazy_after_forced", l_forced;
   (*
   "unit", Repr.repr();
   "int", Repr.repr 0;

@@ -41,3 +41,17 @@ and _ cell =
 *)
 
 
+(** {2 Manipulating values} *)
+
+val follow : addr -> block
+(** Follow a pointer. *)
+
+val repr : 'a -> [ `Direct ] cell
+(** Get the representation of a direct ocaml value. *)
+
+val walk : (block -> unit) -> block -> unit
+(** Apply the given function to a block, and all the blocks it points to
+    (recursively). *)
+
+
+

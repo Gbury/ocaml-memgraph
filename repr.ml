@@ -41,7 +41,7 @@ and _ cell =
 *)
 
 
-(** Types for keeping track of values we have already seen. *)
+(** Environment for keeping track of values we have already seen. *)
 
 type env = {
   graph : (int, block) Hashtbl.t;
@@ -51,12 +51,26 @@ let env = {
   graph = Hashtbl.create 42;
 }
 
-
 (** Some helper functions *)
 
 let follow b =
   Hashtbl.find env.graph b
 
+let walk f init =
+  let s = Stack.create () in
+  let () = Stack.push init s in
+  try
+    while true do
+      let x = Stack.pop s in
+      let () = f x in
+      match x.data with
+      | Block _ -> ()
+      | Fields a ->
+        Array.iter (function
+            | Pointer b -> Stack.push (follow b) s
+            | _ -> ()) a
+    done
+  with Stack.Empty -> ()
 
 (** Creating new blocks *)
 
@@ -90,8 +104,7 @@ let rec mk_val assoc addr v =
       let a = Array.init (Obj.size v) (fun i ->
           let assoc', v = mk_aux !tmp (Obj.field v i) in
           tmp := assoc';
-          (* (v :> [ `Inline ] cell) *)
-          Abstract
+          (v :> [ `Inline ] cell)
         ) in
       Fields a, !tmp
     else
@@ -101,23 +114,23 @@ let rec mk_val assoc addr v =
   Hashtbl.add env.graph addr b;
   (v, b.addr) :: assoc
 
-(* should return a value of type [< `Inline | `Direct ] cell *)
+(* Should really have a polymorphic return type 'a = [< `Inline | `Direct ] cell,
+   but because of the call above, has only [ `Inline ] cell type... *)
 and mk_aux assoc t =
   if Obj.is_int t then
-    let res : [< `Inline | `Direct ] cell = Int (Obj.obj t : int) in
+    let res (* : [< `Inline | `Direct ] cell *) = Int (Obj.obj t : int) in
     assoc, res
   else begin
     try
-      let res : [< `Inline | `Direct ] cell = Pointer (List.assq t assoc) in
+      let res (* : [< `Inline | `Direct ] cell *) = Pointer (List.assq t assoc) in
       assoc, res
     with Not_found ->
       let addr = new_addr () in
       let assoc' = mk_val ((t, addr) :: assoc) addr t in
-      let res : [< `Inline | `Direct ] cell = Pointer addr in
+      let res (* : [< `Inline | `Direct ] cell *) = Pointer addr in
       assoc', res
   end
 
-let repr x =
-  let _, res = mk_aux [] (Obj.repr x) in
-  res
+let repr x : [ `Direct ] cell =
+  snd (mk_aux [] (Obj.repr x))
 
