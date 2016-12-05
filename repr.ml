@@ -116,18 +116,21 @@ let rec mk_val assoc addr v =
 
 (* Should really have a polymorphic return type 'a = [< `Inline | `Direct ] cell,
    but because of the call above, has only [ `Inline ] cell type... *)
-and mk_aux assoc t =
+and mk_aux:
+  (Obj.t * addr) list -> Obj.t ->
+  (Obj.t * addr) list * [< `Inline | `Direct ] cell
+  = fun assoc t ->
   if Obj.is_int t then
-    let res (* : [< `Inline | `Direct ] cell *) = Int (Obj.obj t : int) in
+    let res : [< `Inline | `Direct ] cell = Int (Obj.obj t : int) in
     assoc, res
   else begin
     try
-      let res (* : [< `Inline | `Direct ] cell *) = Pointer (List.assq t assoc) in
+      let res : [< `Inline | `Direct ] cell = Pointer (List.assq t assoc) in
       assoc, res
     with Not_found ->
       let addr = new_addr () in
       let assoc' = mk_val ((t, addr) :: assoc) addr t in
-      let res (* : [< `Inline | `Direct ] cell *) = Pointer addr in
+      let res : [< `Inline | `Direct ] cell = Pointer addr in
       assoc', res
   end
 
