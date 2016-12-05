@@ -114,11 +114,9 @@ let rec mk_val assoc addr v =
   Hashtbl.add env.graph addr b;
   (v, b.addr) :: assoc
 
-(* Should really have a polymorphic return type 'a = [< `Inline | `Direct ] cell,
-   but because of the call above, has only [ `Inline ] cell type... *)
-and mk_aux:
+and mk_aux: 'a.
   (Obj.t * addr) list -> Obj.t ->
-  (Obj.t * addr) list * [< `Inline | `Direct ] cell
+  (Obj.t * addr) list * ([< `Inline | `Direct ] as 'a) cell
   = fun assoc t ->
   if Obj.is_int t then
     let res : [< `Inline | `Direct ] cell = Int (Obj.obj t : int) in
