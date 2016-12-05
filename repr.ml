@@ -1,81 +1,123 @@
 
+(** Type definitions *)
+
 type tag = int
+(** Ocaml tags *)
+
 type addr = int
+(** Abstract addresses, used for sharing *)
 
-type cell =
-  | Abstract
-  | Int of int
-  | Double of float
-  | String of string
-  | Pointer of addr
-
-and block = {
+type block = {
   addr : addr; (* unique int to preserve sharing *)
-  tag : tag;
-  fields : cell array;
+  tag  : tag;
+  data : data;
 }
+(** Represent OCaml blocks.
+    - tag is the ocaml tag in the block header.
+    - data is a high-level representation of the fields of the block.
+    - addr is additional information used to keep track of sharing between values.
+*)
+
+and data =
+  | Block of [ `Block ] cell
+  | Fields of [ `Inline ] cell array
+(** To have a high-level representation of a block's fields,
+    we distinguish two cases: either the block contain a single big value
+    (typically a string and/or a float), or it contains an array of values. *)
+
+and _ cell =
+  | Abstract :           [< `Inline ] cell            (** Value not yet handled *)
+  | Int      : int    -> [< `Inline | `Direct ] cell  (** Integers *)
+  | Pointer  : addr   -> [< `Inline | `Direct ] cell  (** Pointers to some block *)
+  | String   : string -> [< `Block ] cell             (** String *)
+  | Double   : float  -> [< `Block | `Inline ] cell   (** A float *)
+(** The actual type of memory cells containing real values.
+    There are actually three type of cells:
+    - [`Direct] cells are values that can be found in ocaml variables
+    - [`Inline] cells are values that can be found in a block's field array
+    - [`Block]  cells are "big" values that take a whole block
+
+    Obviously, some constructors can build more than one type of cells.
+*)
+
+
+(** Types for keeping track of values we have already seen. *)
 
 type env = {
   graph : (int, block) Hashtbl.t;
-  mutable assoc : (Obj.t * int) list;
 }
 
 let env = {
   graph = Hashtbl.create 42;
-  assoc = [];
 }
 
-let pp_cell fmt = function
-  | Abstract -> Format.fprintf fmt "abstract"
-  | Int i -> Format.fprintf fmt "%d" i
-  | Double f -> Format.fprintf fmt "%f" f
-  | String s -> Format.fprintf fmt "%s" s
-  | Pointer d -> Format.fprintf fmt "#%d" d
 
-let pp_array fmt a =
-  Array.iter (fun c -> Format.fprintf fmt "%a;@;" pp_cell c) a
+(** Some helper functions *)
 
-let pp_block fmt b =
-  Format.fprintf fmt "{%d}@;%a" b.tag pp_array b.fields
+let follow b =
+  Hashtbl.find env.graph b
 
-let follow b = Hashtbl.find env.graph b
+
+(** Creating new blocks *)
 
 let new_addr =
   let i = ref 0 in
   (fun () -> incr i; !i)
 
-let mk_block addr tag fields = { addr; tag; fields; }
+let mk_block addr tag data = { addr; tag; data; }
 
-let rec mk_val addr v =
+
+(** Converting Obj.t into blocks *)
+
+let rec mk_val assoc addr v =
   let tag = Obj.tag v in
-  let fields =
+  let data, assoc =
     if tag = Obj.double_tag then
-      [| Double (Obj.obj v : float) |]
+      let f : float = Obj.obj v in
+      Block (Double f), assoc
     else if tag = Obj.string_tag then
-      [| String (Obj.obj v : string) |]
+      let s : string = Obj.obj v in
+      Block (String s), assoc
     else if tag = Obj.double_array_tag then
-      (Array.init (Obj.size v) (fun i -> Double (Obj.double_field v i)))
+      let a = Array.init (Obj.size v)
+          (fun i -> Double (Obj.double_field v i))
+      in
+      Fields a, assoc
     else if tag <= 245 ||
             tag = Obj.object_tag ||
             tag = Obj.forward_tag then
-      (Array.init (Obj.size v) (fun i -> mk (Obj.field v i)))
+      let tmp = ref assoc in
+      let a = Array.init (Obj.size v) (fun i ->
+          let assoc', v = mk_aux !tmp (Obj.field v i) in
+          tmp := assoc';
+          (* (v :> [ `Inline ] cell) *)
+          Abstract
+        ) in
+      Fields a, !tmp
     else
-      [| Abstract |]
+      Fields [| Abstract |], assoc
   in
-  let b = mk_block addr tag fields in
-  Hashtbl.add env.graph addr b
+  let b = mk_block addr tag data in
+  Hashtbl.add env.graph addr b;
+  (v, b.addr) :: assoc
 
-and mk t =
-  try Pointer (List.assq t env.assoc)
-  with Not_found ->
-    if Obj.is_int t then
-      Int (Obj.obj t : int)
-    else begin
+(* should return a value of type [< `Inline | `Direct ] cell *)
+and mk_aux assoc t =
+  if Obj.is_int t then
+    let res : [< `Inline | `Direct ] cell = Int (Obj.obj t : int) in
+    assoc, res
+  else begin
+    try
+      let res : [< `Inline | `Direct ] cell = Pointer (List.assq t assoc) in
+      assoc, res
+    with Not_found ->
       let addr = new_addr () in
-      env.assoc <- (t, addr) :: env.assoc;
-      mk_val addr t;
-      Pointer addr
-    end
+      let assoc' = mk_val ((t, addr) :: assoc) addr t in
+      let res : [< `Inline | `Direct ] cell = Pointer addr in
+      assoc', res
+  end
 
-let repr v = mk (Obj.repr v)
+let repr x =
+  let _, res = mk_aux [] (Obj.repr x) in
+  res
 
