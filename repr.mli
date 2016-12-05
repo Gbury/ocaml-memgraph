@@ -46,12 +46,20 @@ and _ cell =
 val follow : addr -> block
 (** Follow a pointer. *)
 
-val repr : 'a -> [ `Direct ] cell
-(** Get the representation of a direct ocaml value. *)
-
 val walk : (block -> unit) -> block -> unit
 (** Apply the given function to a block, and all the blocks it points to
     (recursively). *)
 
+(** {2 Creating values} *)
 
+val repr : 'a -> [ `Direct ] cell
+(** Get the representation of a direct ocaml value. *)
+
+type context = { mk : 'a. 'a -> [ `Direct ] cell }
+(** A type containing a function to create cells. *)
+
+val context : (context -> 'a) -> 'a
+(** Allow to use the same context for creating values, i.e.
+    all values creating with [context.mk] will faithfully make use of
+    sharing. *)
 

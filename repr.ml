@@ -41,7 +41,7 @@ and _ cell =
 *)
 
 
-(** Environment for keeping track of values we have already seen. *)
+(* Environment for keeping track of values we have already seen. *)
 
 type env = {
   graph : (int, block) Hashtbl.t;
@@ -51,29 +51,41 @@ let env = {
   graph = Hashtbl.create 42;
 }
 
-(** Some helper functions *)
+(* Some helper functions *)
 
+(* Follow a pointer, i.e. "dereference" it *)
 let follow b =
   Hashtbl.find env.graph b
 
+(* Function to iter over a block and all its descendants..
+   We use a hashtbl to ensure we don't loop on cyclic values *)
 let walk f init =
+  let h = Hashtbl.create 42 in
   let s = Stack.create () in
-  let () = Stack.push init s in
+  let () = Stack.push init.addr s in
   try
     while true do
       let x = Stack.pop s in
-      let () = f x in
-      match x.data with
-      | Block _ -> ()
-      | Fields a ->
-        Array.iter (function
-            | Pointer b -> Stack.push (follow b) s
-            | _ -> ()) a
+      if Hashtbl.mem h x then ()
+      else begin
+        Hashtbl.add h x true;
+        let b = follow x in
+        let () = f b in
+        match b.data with
+        | Block _ -> ()
+        | Fields a -> Array.iter (
+            function
+            | Pointer addr ->
+              if not (Hashtbl.mem h addr) then
+                Stack.push addr s
+            | _ -> ()
+          ) a
+      end
     done
   with Stack.Empty -> ()
 
-(** Creating new blocks *)
 
+(* Creating new blocks *)
 let new_addr =
   let i = ref 0 in
   (fun () -> incr i; !i)
@@ -81,7 +93,7 @@ let new_addr =
 let mk_block addr tag data = { addr; tag; data; }
 
 
-(** Converting Obj.t into blocks *)
+(* Converting Obj.t into blocks *)
 
 let rec mk_val assoc addr v =
   let tag = Obj.tag v in
@@ -97,17 +109,15 @@ let rec mk_val assoc addr v =
           (fun i -> Double (Obj.double_field v i))
       in
       Fields a, assoc
-    else if tag <= 245 ||
-            tag = Obj.object_tag ||
-            tag = Obj.forward_tag then
+    else if tag < Obj.no_scan_tag then begin
       let tmp = ref assoc in
       let a = Array.init (Obj.size v) (fun i ->
           let assoc', v = mk_aux !tmp (Obj.field v i) in
           tmp := assoc';
-          (v :> [ `Inline ] cell)
+          v
         ) in
       Fields a, !tmp
-    else
+    end else
       Fields [| Abstract |], assoc
   in
   let b = mk_block addr tag data in
@@ -134,4 +144,19 @@ and mk_aux: 'a.
 
 let repr x : [ `Direct ] cell =
   snd (mk_aux [] (Obj.repr x))
+
+
+(* Share a context between calls to repr... *)
+type context = { mk : 'a. 'a -> [ `Direct ] cell }
+
+let context f =
+  let assoc = ref [] in
+  let context = {
+    mk = function x ->
+      let l, res = mk_aux !assoc (Obj.repr x) in
+      assoc := l;
+      res;
+  } in
+  f context
+
 
