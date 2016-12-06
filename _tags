@@ -1,4 +1,4 @@
-<*>: package(unix)
+<*>: package(unix), optimization_rounds(0)
 
 # more warnings
 <**/*.ml>: warn_K, warn_Y, warn_X

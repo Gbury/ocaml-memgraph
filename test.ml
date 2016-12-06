@@ -20,25 +20,29 @@ let l_repr = Repr.repr l
 let l_val = Repr.repr (Lazy.force l)
 let l_forced = Repr.repr l
 
-let f x y z = x+y+z
-let g1 = f 5
-let g2 = g1 42
-let g3 = f 7
-
 let l = [5; 6]
 let l1 = 2 :: l
 let l2 = 3 :: l
+
+let f x = x + 1
+
+let g x y z = x+y+z
+let g1 = g 5
+let g2 = g1 42
+let g3 = g 7
 
 ;;
 (* Printing *)
 Repr.(context (fun ctx ->
     Dot.to_file "temp.gv" [
-      "l1", ctx.mk l1;
-      "l2", ctx.mk l2;
+      "l", ctx.mk l;
       "f", ctx.mk f;
-      "g1", ctx.mk g1;
-      "g2", ctx.mk g2;
-      "g3", ctx.mk g3;
+      "map", ctx.mk List.map;
+      "map_f", ctx.mk (List.map f);
+      "g x y z", ctx.mk g;
+      "g1 = g 5", ctx.mk g1;
+      "g2 = g1 42", ctx.mk g2;
+      "g3 = g 7", ctx.mk g3;
   (*
   "lazy: 5 + 42", l_repr;
   "lazy_forced", l_val;

@@ -9,7 +9,6 @@ let print_direct_cell fmt (c : [`Direct] Repr.cell) =
 
 let print_inline_cell fmt (c : [`Inline] Repr.cell) =
   match c with
-  | Repr.Abstract   -> Format.fprintf fmt "?"
   | Repr.Int i      -> Format.fprintf fmt "%d" i
   | Repr.Pointer _  -> Format.fprintf fmt " . "
   | Repr.Double f   -> Format.fprintf fmt "%f" f
@@ -19,7 +18,10 @@ let print_block_cell fmt (c: [`Block] Repr.cell) =
   | Repr.String s   -> Format.fprintf fmt "'%s'" s
   | Repr.Double f   -> Format.fprintf fmt "%f" f
 
-let print_cell_array fmt = function
+let print_contents fmt t =
+  match t.Repr.data with
+  | Repr.Abstract ->
+    Format.fprintf fmt "<f0> \<Abstract\>"
   | Repr.Block c ->
     Format.fprintf fmt "<f0> %a" print_block_cell c
   | Repr.Fields a ->
@@ -30,11 +32,11 @@ let print_cell_array fmt = function
 
 let print_contents fmt t =
   Format.fprintf fmt "{ <head> Tag : %d | %a }"
-    (t.Repr.tag :> int) print_cell_array t.Repr.data
+    (t.Repr.tag :> int) print_contents t
 
 let print_edges fmt t =
   match t.Repr.data with
-  | Repr.Block _ -> ()
+  | Repr.Abstract | Repr.Block _ -> ()
   | Repr.Fields a ->
     for i = 0 to Array.length a - 1 do
       match a.(i) with

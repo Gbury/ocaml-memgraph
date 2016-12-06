@@ -8,9 +8,10 @@ type addr = int
 (** Abstract addresses, used for sharing *)
 
 type block = {
-  addr : addr; (* unique int to preserve sharing *)
-  tag  : tag;
-  data : data;
+  addr : addr; (** unique int to preserve sharing *)
+  tag  : tag;  (** Block tag *)
+  data : data; (** Block contents *)
+  phys : int;  (** Actual physical adress during translation. *)
 }
 (** Represent OCaml blocks.
     - tag is the ocaml tag in the block header.
@@ -19,6 +20,7 @@ type block = {
 *)
 
 and data =
+  | Abstract
   | Block of [ `Block ] cell
   | Fields of [ `Inline ] cell array
 (** To have a high-level representation of a block's fields,
@@ -26,7 +28,6 @@ and data =
     (typically a string and/or a float), or it contains an array of values. *)
 
 and _ cell =
-  | Abstract :           [< `Inline ] cell            (** Value not yet handled *)
   | Int      : int    -> [< `Inline | `Direct ] cell  (** Integers *)
   | Pointer  : addr   -> [< `Inline | `Direct ] cell  (** Pointers to some block *)
   | String   : string -> [< `Block ] cell             (** String *)
@@ -77,7 +78,7 @@ let walk f init =
         let b = follow x in
         let () = f b in
         match b.data with
-        | Block _ -> ()
+        | Abstract | Block _ -> ()
         | Fields a -> Array.iter (
             function
             | Pointer addr ->
@@ -96,7 +97,8 @@ let new_addr =
   let i = ref 0 in
   (fun () -> incr i; !i)
 
-let mk_block addr tag data = { addr; tag; data; }
+let mk_block addr tag data phys =
+  { addr; tag; data; phys; }
 
 
 (** Converting Obj.t into blocks.
@@ -134,9 +136,10 @@ let rec mk_val assoc addr v =
       Fields a, !tmp
     (* If we do not fit in the previous cases, the block's contents are unknown. *)
     end else
-      Fields [| Abstract |], assoc
+      Abstract, assoc
   in
-  let b = mk_block addr tag data in
+  let phys : int = Obj.magic v in
+  let b = mk_block addr tag data phys in
   Hashtbl.add env.graph addr b;
   (v, b.addr) :: assoc
 

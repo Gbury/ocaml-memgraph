@@ -8,9 +8,10 @@ type addr = int
 (** Abstract addresses, used for sharing *)
 
 type block = {
-  addr : addr; (* unique int to preserve sharing *)
-  tag  : tag;
-  data : data;
+  addr : addr; (** unique int to preserve sharing *)
+  tag  : tag;  (** Block tag *)
+  data : data; (** Block contents *)
+  phys : int;  (** Actual physical adress during translation. *)
 }
 (** Represent OCaml blocks.
     - tag is the ocaml tag in the block header.
@@ -19,6 +20,7 @@ type block = {
 *)
 
 and data =
+  | Abstract
   | Block of [ `Block ] cell
   | Fields of [ `Inline ] cell array
 (** To have a high-level representation of a block's fields,
@@ -26,7 +28,6 @@ and data =
     (typically a string and/or a float), or it contains an array of values. *)
 
 and _ cell =
-  | Abstract :           [< `Inline ] cell            (** Value not yet handled *)
   | Int      : int    -> [< `Inline | `Direct ] cell  (** Integers *)
   | Pointer  : addr   -> [< `Inline | `Direct ] cell  (** Pointers to some block *)
   | String   : string -> [< `Block ] cell             (** String *)
