@@ -1,28 +1,33 @@
 
-type t1 = {
+type foo = {
   a : int;
   b : float;
+  c : int;
+  d : int;
 }
 
-type t2 = {
-  c : float;
-  d : float;
+type bar = {
+  e : float;
+  f : float;
+  g : float;
 }
 
-type t3 = {
-  foo : t1;
-  bar : t2
+type foobar = {
+  h : int;
+  foo : foo;
+  bar : bar;
+  i : float;
 }
 
-let foo = { a = 1; b = 42.; }
-let bar = { c = 5.; d = 7.; }
-let foobar = { foo; bar; }
+let foo = { a = 1; b = 42.; c = 2; d = 3; }
+let bar = { e = 5.; f = 7.; g = 8.; }
+let foobar = { h = 0; foo; bar; i = 9. }
 
 let () =
   Repr.(context (fun ctx ->
       Dot.print_list Format.std_formatter [
-        "foo = \{ a = 1; b = 42.; \}", ctx.mk foo;
-        "bar = \{ c = 5.; b = 7. \}", ctx.mk bar;
-        "\{ foo; bar; \}", ctx.mk foobar
+        "foo = \{ a = 1; b = 42.; c = 2; d = 3; \}", ctx.mk foo;
+        "bar = \{ e = 5.; f = 7.; g = 8.; \}", ctx.mk bar;
+        "\{ h = 0; foo; bar; i = 9.; \}", ctx.mk foobar
       ]))
 

@@ -7,7 +7,7 @@ let l = [42]
 let l1 = 1::2::l
 let l2 = 3::4::l
 
-let rec cyclic = 1 :: 2 :: 3 :: l
+let rec cyclic = 1 :: 2 :: 3 :: cyclic
 
 let () =
   Repr.(context (fun ctx ->
