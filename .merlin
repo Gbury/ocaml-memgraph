@@ -1,2 +1,6 @@
-S ./
-B _build/
+S src/
+S examples/
+
+B _build/src/
+B _build/examples/
+

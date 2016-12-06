@@ -1,5 +1,12 @@
-<*>: package(unix), optimization_rounds(0)
 
-# more warnings
+# Include source directory
+<src>: include
+<examples>: include
+
+# Warning settings
 <**/*.ml>: warn_K, warn_Y, warn_X
 <**/*.cm*>: debug
+
+# Compilation options
+<**/*>: package(unix), optimization_rounds(0)
+

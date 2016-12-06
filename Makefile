@@ -3,34 +3,38 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
 FLAGS=
-DIRS=
 DOC=
 
-TEST=test.native
 NAME=memgraph
+EXAMPLES_ML=$(shell ls examples/*.ml)
+EXAMPLES_SVG=$(EXAMPLES_ML:.ml=.svg)
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
 all: lib
 
 lib:
-	$(COMP) $(FLAGS) $(DIRS) $(LIB)
+	$(COMP) $(FLAGS) $(LIB)
 
-test: test-build
-	rm -f temp.gv
-	./$(TEST)
-	dot -Txlib temp.gv
+ex: $(EXAMPLES_SVG)
 
-test-build:
-	$(COMP) $(FLAGS) $(DIRS) $(TEST)
+%.svg: %.gv
+	dot -Tsvg $< -o $@
+
+%.gv: %.native
+	./$< > $@
+
+%.native: %.ml
+	$(COMP) $(FLAGS) $@
+	mv $(notdir $@) $@
 
 doc:
-	$(COMP) $(FLAGS) $(DIRS) $(DOC)
-
-log:
-	cat _build/$(LOG) || true
+	$(COMP) $(FLAGS) $(DOC)
 
 clean:
+	rm -f $(TEST) temp.gv
+	rm -f examples/*.{svg,gv,native}
 	$(COMP) -clean
 
 .PHONY: clean doc all
+
