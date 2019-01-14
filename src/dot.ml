@@ -1,4 +1,29 @@
 
+(** External pointers *)
+
+(** Global cache to avoid printing th esame external twice or more. *)
+let external_cache = Hashtbl.create 42
+
+(** The cache should be cleared before each printing function,
+    in order to be local to each printing function. *)
+let clear_external_cache = Hashtbl.clear external_cache
+
+let external_id fmt e =
+  Format.fprintf fmt "e%d" (e :> int)
+
+let print_external_contents fmt i =
+  Format.fprintf fmt "{ <head> Out of heap : 0x%x }" (i :> int)
+
+let print_external fmt i =
+  if not @@ Hashtbl.mem external_cache i then begin
+    Format.fprintf fmt
+      "%a [label=\"%a\" shape=\"record\" style=\"rounded, filled\" fillcolor=\"grey\"];@\n"
+      external_id i print_external_contents i;
+  end
+
+
+(** Regular blocks printing *)
+
 let node_id fmt t =
   Format.fprintf fmt "p%d" Repr.((t.addr :> int))
 
@@ -11,6 +36,7 @@ let print_inline_cell fmt (c : [`Inline] Repr.cell) =
   match c with
   | Repr.Int i      -> Format.fprintf fmt "%d" i
   | Repr.Pointer _  -> Format.fprintf fmt " . "
+  | Repr.External _ -> Format.fprintf fmt " . "
   | Repr.Double f   -> Format.fprintf fmt "%f" f
 
 let print_block_cell fmt (c: [`Block] Repr.cell) =
@@ -42,6 +68,9 @@ let print_edges fmt t =
       match a.(i) with
       | Repr.Pointer b ->
         Format.fprintf fmt "%a:f%d -> %a:<head>;@\n" node_id t i node_id (Repr.follow b)
+      | Repr.External e ->
+        Format.fprintf fmt "%a:f%d -> %a:<head>;@\n" node_id t i external_id e;
+        print_external fmt e
       | _ -> ()
     done
 

@@ -22,9 +22,9 @@ let j = `J (b, c)
 let () =
   Repr.(context (fun ctx ->
     Dot.print_list Format.std_formatter [
-      "a = A 1,2", ctx.mk a;
-      "b = B(3,4)", ctx.mk b;
-      "c = C 0.0", ctx.mk c;
+      "a = A (1,2)", ctx.mk a;
+      "b = B ((3,4))", ctx.mk b;
+      "c = C 42.0", ctx.mk c;
       "d = D", ctx.mk d;
       "e = E", ctx.mk e;
       "f = F a", ctx.mk f;

@@ -30,6 +30,7 @@ and data =
 and _ cell =
   | Int      : int    -> [< `Inline | `Direct ] cell  (** Integers *)
   | Pointer  : addr   -> [< `Inline | `Direct ] cell  (** Pointers to some block *)
+  | External : addr   -> [< `Inline ] cell            (** Out of heap pointer *)
   | String   : string -> [< `Block ] cell             (** String *)
   | Double   : float  -> [< `Block | `Inline ] cell   (** A float *)
 (** The actual type of memory cells containing real values.
@@ -125,11 +126,11 @@ let rec mk_val assoc addr v =
           (fun i -> Double (Obj.double_field v i))
       in
       Fields a, assoc
-    (* General case, we parse an array of fields. *)
+      (* General case, we parse an array of fields. *)
     else if tag < Obj.no_scan_tag then begin
       let tmp = ref assoc in
       let a = Array.init (Obj.size v) (fun i ->
-          let assoc', v = mk_aux !tmp (Obj.field v i) in
+          let assoc', v = mk_inline !tmp (Obj.field v i) in
           tmp := assoc';
           v
         ) in
@@ -143,8 +144,23 @@ let rec mk_val assoc addr v =
   Hashtbl.add env.graph addr b;
   (v, b.addr) :: assoc
 
-(** Wrapper for immediate and inline common values. *)
-and mk_aux: 'a. assoc -> Obj.t -> assoc * ([< `Inline | `Direct ] as 'a) cell
+(** Wrapper for inline values. *)
+and mk_inline: assoc -> Obj.t -> assoc * [ `Inline ] cell = fun assoc t ->
+  if Obj.is_int t then
+    assoc, Int (Obj.obj t : int)
+  else if Obj.tag t = Obj.out_of_heap_tag then
+    assoc, External (Obj.magic t : int)
+  else begin
+    try
+      assoc, Pointer (List.assq t assoc)
+    with Not_found ->
+      let addr = new_addr () in
+      let assoc' = mk_val ((t, addr) :: assoc) addr t in
+      assoc', Pointer addr
+  end
+
+(** Wrapper for direct values *)
+and mk_direct: assoc -> Obj.t -> assoc * [ `Direct ] cell
   = fun assoc t ->
   if Obj.is_int t then
     assoc, Int (Obj.obj t : int)
@@ -159,7 +175,7 @@ and mk_aux: 'a. assoc -> Obj.t -> assoc * ([< `Inline | `Direct ] as 'a) cell
 
 (** Exported function to translate a single value. *)
 let repr x : [ `Direct ] cell =
-  snd (mk_aux [] (Obj.repr x))
+  snd (mk_direct [] (Obj.repr x))
 
 (** Exported function to translate mutliple values using the same context,
     in order to preserve the sharing of values across calls to "mk". *)
@@ -169,7 +185,7 @@ let context f =
   let assoc = ref [] in
   let context = {
     mk = function x ->
-      let l, res = mk_aux !assoc (Obj.repr x) in
+      let l, res = mk_direct !assoc (Obj.repr x) in
       assoc := l;
       res;
   } in

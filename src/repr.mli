@@ -30,6 +30,7 @@ and data =
 and _ cell =
   | Int      : int    -> [< `Inline | `Direct ] cell  (** Integers *)
   | Pointer  : addr   -> [< `Inline | `Direct ] cell  (** Pointers to some block *)
+  | External : addr   -> [< `Inline ] cell            (** Out of heap pointer *)
   | String   : string -> [< `Block ] cell             (** String *)
   | Double   : float  -> [< `Block | `Inline ] cell   (** A float *)
 (** The actual type of memory cells containing real values.
@@ -50,6 +51,7 @@ val follow : addr -> block
 val walk : (block -> unit) -> block -> unit
 (** Apply the given function to a block, and all the blocks it points to
     (recursively). *)
+
 
 (** {2 Creating values} *)
 
