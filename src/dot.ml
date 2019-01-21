@@ -9,10 +9,10 @@ let external_cache = Hashtbl.create 42
 let clear_external_cache = Hashtbl.clear external_cache
 
 let external_id fmt e =
-  Format.fprintf fmt "e%d" (e :> int)
+  Format.fprintf fmt "e%s" (Nativeint.to_string e)
 
 let print_external_contents fmt i =
-  Format.fprintf fmt "{ <head> Out of heap : 0x%x }" (i :> int)
+  Format.fprintf fmt "{ <head> Out of heap : 0x%nx }" i
 
 let print_external fmt i =
   if not @@ Hashtbl.mem external_cache i then begin
@@ -25,7 +25,13 @@ let print_external fmt i =
 (** Regular blocks printing *)
 
 let node_id fmt t =
-  Format.fprintf fmt "p%d" Repr.((t.addr :> int))
+  Format.fprintf fmt "p%d" Repr.((t.block.addr :> int))
+
+let node_anchor fmt t =
+  Format.fprintf fmt "p%d:<%s>" Repr.((t.block.addr :> int))
+    (match Repr.(t.offset) with
+     | 0 -> "head"
+     | o -> Format.asprintf "f%d" (o - 1))
 
 let print_direct_cell fmt (c : [`Direct] Repr.cell) =
   match c with
@@ -38,6 +44,7 @@ let print_inline_cell fmt (c : [`Inline] Repr.cell) =
   | Repr.Pointer _  -> Format.fprintf fmt " . "
   | Repr.External _ -> Format.fprintf fmt " . "
   | Repr.Double f   -> Format.fprintf fmt "%f" f
+  | Repr.Infix      -> Format.fprintf fmt "Infix"
 
 let print_block_cell fmt (c: [`Block] Repr.cell) =
   match c with
@@ -58,16 +65,17 @@ let print_contents fmt t =
 
 let print_contents fmt t =
   Format.fprintf fmt "{ <head> Tag : %d | %a }"
-    (t.Repr.tag :> int) print_contents t
+    Repr.((t.block.tag :> int))
+    print_contents t.Repr.block
 
 let print_edges fmt t =
-  match t.Repr.data with
+  match Repr.(t.block.data) with
   | Repr.Abstract | Repr.Block _ -> ()
   | Repr.Fields a ->
     for i = 0 to Array.length a - 1 do
       match a.(i) with
       | Repr.Pointer b ->
-        Format.fprintf fmt "%a:f%d -> %a:<head>;@\n" node_id t i node_id (Repr.follow b)
+        Format.fprintf fmt "%a:f%d -> %a;@\n" node_id t i node_anchor (Repr.follow b)
       | Repr.External e ->
         Format.fprintf fmt "%a:f%d -> %a:<head>;@\n" node_id t i external_id e;
         print_external fmt e
@@ -75,8 +83,8 @@ let print_edges fmt t =
     done
 
 let print_node h fmt t =
-  if not (Hashtbl.mem h Repr.(t.addr)) then begin
-    Hashtbl.add h Repr.(t.addr) true;
+  if not (Hashtbl.mem h Repr.(t.block.addr)) then begin
+    Hashtbl.add h Repr.(t.block.addr) true;
     Format.fprintf fmt
       "%a [label=\"%a\" shape=\"record\" style=\"rounded, filled\" fillcolor=\"lightblue\"];@\n"
       node_id t print_contents t;
@@ -87,7 +95,7 @@ let print_repr h fmt n (name, t) =
   match t with
   | Repr.Pointer b ->
     let block = Repr.follow b in
-    Format.fprintf fmt "entry_%d -> %a;@\n" n node_id block;
+    Format.fprintf fmt "entry_%d -> %a;@\n" n node_anchor block;
     Repr.walk (print_node h fmt) block
   | _ -> ()
 

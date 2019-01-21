@@ -11,7 +11,6 @@ type block = {
   addr : addr; (** unique int to preserve sharing *)
   tag  : tag;  (** Block tag *)
   data : data; (** Block contents *)
-  phys : int;  (** Actual physical adress during translation. *)
 }
 (** Represent OCaml blocks.
     - tag is the ocaml tag in the block header.
@@ -28,11 +27,12 @@ and data =
     (typically a string and/or a float), or it contains an array of values. *)
 
 and _ cell =
-  | Int      : int    -> [< `Inline | `Direct ] cell  (** Integers *)
-  | Pointer  : addr   -> [< `Inline | `Direct ] cell  (** Pointers to some block *)
-  | External : addr   -> [< `Inline ] cell            (** Out of heap pointer *)
-  | String   : string -> [< `Block ] cell             (** String *)
-  | Double   : float  -> [< `Block | `Inline ] cell   (** A float *)
+  | Int      : int          -> [< `Inline | `Direct ] cell  (** Integers *)
+  | Pointer  : addr         -> [< `Inline | `Direct ] cell  (** Pointers to some block *)
+  | External : Nativeint.t  -> [< `Inline ] cell            (** Out of heap pointer *)
+  | String   : string       -> [< `Block ] cell             (** String *)
+  | Double   : float        -> [< `Block | `Inline ] cell   (** A float *)
+  | Infix    :                 [ `Inline ] cell             (** An infix header (used in closures) *)
 (** The actual type of memory cells containing real values.
     There are actually three type of cells:
     - [`Direct] cells are values that can be found in ocaml variables
@@ -42,13 +42,20 @@ and _ cell =
     Obviously, some constructors can build more than one type of cells.
 *)
 
+type pblock = {
+  block   : block;  (** The block being pointed at *)
+  offset  : int;    (** The offset in the block (used in mutually rec closures) *)
+}
+(** This represents what is pointed at by a pointer. *)
+
+
 
 (** {2 Manipulating values} *)
 
-val follow : addr -> block
+val follow : addr -> pblock
 (** Follow a pointer. *)
 
-val walk : (block -> unit) -> block -> unit
+val walk : (pblock -> unit) -> pblock -> unit
 (** Apply the given function to a block, and all the blocks it points to
     (recursively). *)
 
