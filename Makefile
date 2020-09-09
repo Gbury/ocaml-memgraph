@@ -1,40 +1,20 @@
-# copyright (c) 2014, guillaume bury
+# copyright (c) 2020, guillaume bury
 
-LOG=build.log
-COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
+COMP=dune
 FLAGS=
-DOC=
 
-NAME=memgraph
-EXAMPLES_ML=$(shell ls examples/*.ml)
-EXAMPLES_SVG=$(EXAMPLES_ML:.ml=.svg)
+all: dune
 
-LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
+watch:
+	dune build $(FLAGS) -w @check
 
-all: lib
-
-lib:
-	$(COMP) $(FLAGS) $(LIB)
-
-ex: $(EXAMPLES_SVG)
-
-%.svg: %.gv
-	dot -Tsvg $< -o $@
-
-%.gv: %.native
-	./$< > $@
-
-%.native: %.ml
-	$(COMP) $(FLAGS) $@
-	mv $(notdir $@) $@
+dune:
+	dune build $(FLAGS) @install
 
 doc:
-	$(COMP) $(FLAGS) $(DOC)
+	dune build $(FLAGS) @doc
 
 clean:
-	rm -f $(TEST) temp.gv
-	rm -f examples/*.{svg,gv,native}
-	$(COMP) -clean
+	$(COMP) clean
 
-.PHONY: clean doc all
-
+.PHONY: all watch dune bin test doc clean

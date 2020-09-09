@@ -1,0 +1,7 @@
+
+(library
+  (name         memgraph)
+  (public_name  memgraph)
+  (libraries    unix)
+  (modules      Repr Dot)
+)

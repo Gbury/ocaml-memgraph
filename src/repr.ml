@@ -1,4 +1,50 @@
 
+(* This file is free software, part of memgraph. See file "LICENSE" for more information *)
+
+(* Inspecting ocaml values
+
+   The implementation of this module should be safe, however it is
+   very easy to make things become unsafe and crash or worse when
+   using the {Obj} module, and particularly when reading fields
+   like this module does (we're somewhat less unsafe because we
+   only read info in this module, and do not modify anything, but
+   still, it is delicate code).
+
+   As far as I know, the current code should work across al versions
+   of ocaml, whether it be native or bytecode. Note however that the
+   closure representation differs from bytecode to native, so you
+   may obtain different results depending on how you run this code.
+
+
+   WARNING: if ever some more semantic information wanted to be
+            extracted from ocaml values, great care muist be taken
+            to consider the changes that occurred in the
+            representation of ocaml values. Note: such additions
+            could be made to an additional module, rather than in
+            this code, potentially by adding some hooks/unsafe
+            functions in this module to allow an external module
+            to add this information.
+
+  As far as I know, these changes are:
+
+  * Closure representation and env vars (PR#9619)
+    Starting from ocaml 4.12, sets of closures now record
+    the field number of the start of their environment
+    using the same field used for arity. The arity field now goes from
+    `arity (wordsize - 1 bit) . 1`
+    to
+    `arity (8 bits) . start-of-environment (wordsize - 9 bits) . 1`
+    This means different things for the native and bytecode backends:
+    - in native mode, the arity field simply changes
+    - in bytecode, the arity field was not present, and is now added to
+      the representation of all closures.
+    Hence, if there ever was a change to add some kind of semantic info
+    in order to extract the arity and start-of-env info from such fields,
+    conditional compilation *MUST* be used to avoid crashing when using
+    bytecode with ocaml < 4.12
+
+*)
+
 (** Type definitions *)
 
 type tag = int
@@ -117,13 +163,13 @@ let mk_block addr tag data =
 *)
 let rec mk_val assoc addr v =
   let tag = Obj.tag v in
-  (* Infix closures are special pointers that actually
-     point inside a big closure block, and
-     their size is actually an offset rather than a nnumber of blocks *)
   if tag = Obj.infix_tag then
+    (* Infix closures are special pointers that actually
+       point inside a big closure block, and
+       their size is actually an offset rather than a nnumber of blocks *)
     let offset = Obj.size v in
-    Format.eprintf "Infix, offset: %d@." offset;
-    (** offsets/addresses are in bytes, hence the word_size /8 mutliplication  *)
+    (* Format.eprintf "Infix, offset: %d@." offset; *)
+    (* offsets/addresses are in bytes, hence the word_size /8 mutliplication  *)
     let super = Obj.add_offset v Int32.(neg (of_int (offset * Sys.word_size / 8))) in
     match mk_direct assoc super with
     | assoc', Pointer addr' ->
@@ -139,32 +185,32 @@ let rec mk_val assoc addr v =
     | _, Int _ -> assert false
   else begin
     let data, assoc =
-      (* floats have a special tag *)
       if tag = Obj.double_tag then
+        (* floats have a special tag *)
         let f : float = Obj.obj v in
         Block (Double f), assoc
-        (* Strings store more than one char per word, so again, need to special case *)
       else if tag = Obj.string_tag then
+        (* Strings store more than one char per word, so again, need to special case *)
         let s : string = Obj.obj v in
         Block (String s), assoc
-        (* float arrays must use special access functions *)
       else if tag = Obj.double_array_tag then
+        (* Float arrays must use special access functions *)
         let a = Array.init (Obj.size v)
             (fun i -> Double (Obj.double_field v i))
         in
         Fields a, assoc
-        (* General case, we parse an array of fields. *)
       else if tag < Obj.no_scan_tag then begin
+        (* General case, we parse an array of fields. *)
         let tmp = ref assoc in
-        Format.eprintf "block size (%d): %d@." tag (Obj.size v);
+        (* Format.eprintf "block size (%d): %d@." tag (Obj.size v); *)
         let a = Array.init (Obj.size v) (fun i ->
             let assoc', v = mk_inline !tmp (Obj.field v i) in
             tmp := assoc';
             v
           ) in
         Fields a, !tmp
-        (* If we do not fit in the previous cases, the block's contents are unknown. *)
       end else
+        (* If we do not fit in the previous cases, the block's contents are unknown. *)
         Abstract, assoc
     in
     let block = mk_block addr tag data in
@@ -173,7 +219,8 @@ let rec mk_val assoc addr v =
   end
 
 (** Wrapper for inline values. *)
-and mk_inline: assoc -> Obj.t -> assoc * [ `Inline ] cell = fun assoc t ->
+and mk_inline: assoc -> Obj.t -> assoc * [ `Inline ] cell
+  = fun assoc t ->
   if Obj.is_int t then
     assoc, Int (Obj.obj t : int)
   else if Obj.tag t = Obj.out_of_heap_tag then
@@ -221,14 +268,4 @@ let context f =
   } in
   f context
 
-
-
-(* FOllow out_of_heap pointer !! yeehaw ! *)
-
-(* caml_bytes_get64u :lit un entier 64 bits depuis un bytes (u = unsafe)
-                      bytes -> int -> Int64.t
-                      version 32u pour 32 bits
-      -> caster vers nativeint,
-
-  -> get the tag even for out_of_heap *)
 

@@ -1,21 +1,18 @@
-*.annot
-*.cmo
-*.cma
-*.cmi
-*.a
-*.o
-*.cmx
-*.cmxs
-*.cmxa
-
-# ocamlbuild working directory
+# Source directory (doc, build dir and bin)
 _build/
+src/_build/
+
+# Generated files
+.merlin
+*.install
+doc/index.html
 
 # ocamlbuild targets
 *.byte
 *.native
 
-# oasis generated files
-setup.data
-setup.log
+# opam local switch
+_opam
 
+# swap files
+*.swp

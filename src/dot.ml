@@ -1,12 +1,12 @@
 
-(** External pointers *)
+(* External pointers *)
 
-(** Global cache to avoid printing th esame external twice or more. *)
+(* Global cache to avoid printing the same external twice or more. *)
 let external_cache = Hashtbl.create 42
 
-(** The cache should be cleared before each printing function,
-    in order to be local to each printing function. *)
-let clear_external_cache = Hashtbl.clear external_cache
+(* The cache should be cleared before each printing function,
+   in order to be local to each printing function. *)
+let clear_external_cache () = Hashtbl.clear external_cache
 
 let external_id fmt e =
   Format.fprintf fmt "e%s" (Nativeint.to_string e)
@@ -54,7 +54,7 @@ let print_block_cell fmt (c: [`Block] Repr.cell) =
 let print_contents fmt t =
   match t.Repr.data with
   | Repr.Abstract ->
-    Format.fprintf fmt "<f0> \<Abstract\>"
+    Format.fprintf fmt {|<f0> \<Abstract\>|}
   | Repr.Block c ->
     Format.fprintf fmt "<f0> %a" print_block_cell c
   | Repr.Fields a ->
@@ -91,7 +91,7 @@ let print_node h fmt t =
     print_edges fmt t
   end
 
-let print_repr h fmt n (name, t) =
+let print_repr h fmt n (_, t) =
   match t with
   | Repr.Pointer b ->
     let block = Repr.follow b in
@@ -108,6 +108,7 @@ let print_roots fmt l =
   Format.fprintf fmt "{rank=source;@\n%a@\n}" aux l
 
 let print_list fmt l =
+  clear_external_cache ();
   let print_reprs fmt l =
     let h = Hashtbl.create 42 in
     List.iteri (print_repr h fmt) l

@@ -1,4 +1,11 @@
 
+(** Representation of ocaml values
+
+    This module aims at given a way to inspect the memory layout of ocaml
+    values by providing some type to represent memory layouts, and some
+    functions to convert arbitrary ocaml values into their explicit memory
+    representation. *)
+
 (** {2 Type definitions} *)
 
 type tag = int
@@ -23,8 +30,10 @@ and data =
   | Block of [ `Block ] cell
   | Fields of [ `Inline ] cell array
 (** To have a high-level representation of a block's fields,
-    we distinguish two cases: either the block contain a single big value
-    (typically a string and/or a float), or it contains an array of values. *)
+    we distinguish three cases:
+    - some block are abstract and thus their contents cannot be inspected
+    - the block contain a single big value (typically a string and/or a float)
+    - the block contains an array of values. *)
 
 and _ cell =
   | Int      : int          -> [< `Inline | `Direct ] cell  (** Integers *)
@@ -33,7 +42,7 @@ and _ cell =
   | String   : string       -> [< `Block ] cell             (** String *)
   | Double   : float        -> [< `Block | `Inline ] cell   (** A float *)
   | Infix    :                 [ `Inline ] cell             (** An infix header (used in closures) *)
-(** The actual type of memory cells containing real values.
+(** The actual type of memory cells containing concrete values.
     There are actually three type of cells:
     - [`Direct] cells are values that can be found in ocaml variables
     - [`Inline] cells are values that can be found in a block's field array
