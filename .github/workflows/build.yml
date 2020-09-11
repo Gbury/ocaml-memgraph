@@ -1,6 +1,6 @@
 # Main Workflow
 # =============
-name: main
+name: build
 
 # Configure when to run the workflows. Currently only when
 # it affects the `master` branch (either pushes to the branch,
