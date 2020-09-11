@@ -93,13 +93,13 @@ jobs:
     # --------------
 
     - name: Update documentation on gh-pages
-      if: ${{ matrix.ocaml-version == "4.11.1" && github.ref == "master" }}
+      if: ${{ matrix.ocaml-version == '4.11.1' && github.ref == 'master' }}
       run: |
         git checkout gh-pages
         cp -r _build/default/_doc/_html ./dev
 
     - name: Commit and push doc updates
-      if: ${{ matrix.ocaml-version == "4.11.1" && github.ref == "master" }}
+      if: ${{ matrix.ocaml-version == '4.11.1' && github.ref == 'master' }}
       run: |
         git config --global user.name 'github actions bot'
         git config --global user.email 'action@github.com'
