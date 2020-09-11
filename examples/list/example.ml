@@ -10,8 +10,8 @@ let l2 = 3::4::l
 let rec cyclic = 1 :: 2 :: 3 :: cyclic
 
 let () =
-  Repr.(context (fun ctx ->
-      Dot.print_list Format.std_formatter [
+  Memgraph.Repr.(context (fun ctx ->
+      Memgraph.Dot.print_list Format.std_formatter [
         "[]", ctx.mk empty;
         "[1;2;3]", ctx.mk int_list;
         "[1.;2.;3.]", ctx.mk float_list;

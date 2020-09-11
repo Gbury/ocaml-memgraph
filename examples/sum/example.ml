@@ -20,8 +20,8 @@ let i = `I d
 let j = `J (b, c)
 
 let () =
-  Repr.(context (fun ctx ->
-    Dot.print_list Format.std_formatter [
+  Memgraph.Repr.(context (fun ctx ->
+    Memgraph.Dot.print_list Format.std_formatter [
       "a = A (1,2)", ctx.mk a;
       "b = B ((3,4))", ctx.mk b;
       "c = C 42.0", ctx.mk c;

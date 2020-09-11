@@ -16,8 +16,8 @@ and     i y1 y2 y3 = j y1 y2 y3
 and     j z1 z2 z3 = h z1 z2 z3
 
 let () =
-  Repr.(context (fun ctx ->
-      Dot.print_list Format.std_formatter [
+  Memgraph.Repr.(context (fun ctx ->
+      Memgraph.Dot.print_list Format.std_formatter [
         "f x = x + 1", ctx.mk f;
         "List.map", ctx.mk List.map;
         "List.map f", ctx.mk (List.map f);

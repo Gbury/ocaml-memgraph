@@ -12,7 +12,7 @@ let x = object(self)
   end
 
 let () =
-  Repr.(context (fun ctx ->
-      Dot.print_list Format.std_formatter [
-        "object:foo+factorial", ctx.mk x;
+  Memgraph.Repr.(context (fun ctx ->
+      Memgraph.Dot.print_list Format.std_formatter [
+        "object", ctx.mk x;
       ]))

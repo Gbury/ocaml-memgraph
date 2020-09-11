@@ -26,8 +26,8 @@ let rec env_fields = {
 }
 
 let () =
-  Repr.(context (fun ctx ->
-      Dot.print_list Format.std_formatter [
+  Memgraph.Repr.(context (fun ctx ->
+      Memgraph.Dot.print_list Format.std_formatter [
         "env_tuple", ctx.mk env_tuple;
         "env_fields", ctx.mk env_fields;
       ]))

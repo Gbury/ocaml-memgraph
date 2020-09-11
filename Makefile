@@ -14,6 +14,9 @@ dune:
 doc:
 	dune build $(FLAGS) @doc
 
+ex:
+	dune build $(FLAGS) @examples
+
 clean:
 	$(COMP) clean
 
