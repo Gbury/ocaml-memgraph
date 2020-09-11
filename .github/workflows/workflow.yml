@@ -65,6 +65,9 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: '1'
+    # Install graphviz to check that the generated examples correctly compiler
+    - name: Install graphviz
+      run: sudo apt install graphviz
     # Cache the opam directory for faster setups
     - name: Cach opam directory
       uses: actions/cache@v2
