@@ -1,0 +1,109 @@
+# Main Workflow
+# =============
+name: main
+
+# Configure when to run the workflows. Currently only when
+# it affects the `master` branch (either pushes to the branch,
+# or pull request against it).
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  # Main workflow
+  # =============
+  # Build:
+  # - the package,
+  # - the doc and push it to gh-pages
+  # - the examples and push them to the master branch
+  build:
+
+    runs-on: ${{ matrix.os }}
+
+    # Build Matrix
+    # --------------
+    strategy:
+      matrix:
+        # Operating system to run tests on.
+        # TODO: add macos-latest and windows-latest
+        os:
+          - ubuntu-latest
+          #- macos-latest
+          #- windows-latest
+
+        # Ocaml version to test
+        ocaml-version:
+          - 4.11.1
+          - 4.10.1
+          - 4.09.1
+          - 4.08.1
+          - 4.07.1
+          - 4.06.1
+          - 4.05.0
+          - 4.04.2
+          - 4.03.0
+          - 4.02.3
+          - 4.01.0
+          - 4.00.1
+          - 3.12.1
+
+    # Build ENV
+    # ---------
+    env:
+      # EXAMPLE
+      # ENVVAR: "VALUE"
+
+    # Build/test steps
+    # ----------------
+    steps:
+    # checkout the repo (full clone, necessary for push later)
+    - name: Checkout the repo
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: '1'
+    # Setup ocaml/opam
+    - name: Setup ocaml/opam
+      uses: avsm/setup-ocaml@v1
+      with:
+        ocaml-version: ${{ matrix.ocaml-version }}
+    # Pin the repo
+    - name: Pin the repo
+      run: opam pin add memgraph.dev . --no-action
+    # Install external deps
+    - name: Install external deps
+      run: opam depext memgraph --yes --with-doc --with-test
+    # Install ocaml deps
+    - name: Install Ocaml deps
+      run: opam install . --deps-only --with-doc --with-test
+    # Build the package
+    - name: Build the package
+      run: make dune
+    # Check the doc builds
+    - name: Build the doc
+      run: make doc
+    # Check the examples also build
+    - name: Build the examples
+      run: make ex
+
+    # Update the doc
+    # --------------
+
+    - name: Update documentation on gh-pages
+      if: ${{ matrix.ocaml-version == "4.11.1" && github.ref == "master" }}
+      run: |
+        git checkout gh-pages
+        cp -r _build/default/_doc/_html ./dev
+
+    - name: Commit and push doc updates
+      if: ${{ matrix.ocaml-version == "4.11.1" && github.ref == "master" }}
+      run: |
+        git config --global user.name 'github actions bot'
+        git config --global user.email 'action@github.com'
+        git add dev
+        git commit -m 'Automatic doc update'
+        git push
+
