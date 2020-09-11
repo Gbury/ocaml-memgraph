@@ -14,6 +14,9 @@ dune:
 doc:
 	dune build $(FLAGS) @doc
 
+doc-html: doc
+	xdg-open _build/default/_doc/_html/index.html
+
 ex:
 	dune build $(FLAGS) @examples
 

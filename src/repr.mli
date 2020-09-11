@@ -4,17 +4,18 @@
     This module aims at given a way to inspect the memory layout of ocaml
     values by providing some type to represent memory layouts, and some
     functions to convert arbitrary ocaml values into their explicit memory
-    representation. *)
+    representation.
+*)
 
 (** {2 Type definitions} *)
 
-type tag = int
+type tag = private int
 (** Ocaml tags *)
 
-type addr = int
+type addr = private int
 (** Abstract addresses, used for sharing *)
 
-type block = {
+type block = private {
   addr : addr; (** unique int to preserve sharing *)
   tag  : tag;  (** Block tag *)
   data : data; (** Block contents *)
@@ -28,7 +29,7 @@ type block = {
 and data =
   | Abstract
   | Block of [ `Block ] cell
-  | Fields of [ `Inline ] cell array
+  | Fields of [ `Inline ] cell array (**)
 (** To have a high-level representation of a block's fields,
     we distinguish three cases:
     - some block are abstract and thus their contents cannot be inspected
@@ -51,11 +52,14 @@ and _ cell =
     Obviously, some constructors can build more than one type of cells.
 *)
 
-type pblock = {
+type pblock = private {
   block   : block;  (** The block being pointed at *)
   offset  : int;    (** The offset in the block (used in mutually rec closures) *)
 }
-(** This represents what is pointed at by a pointer. *)
+(** This represents what is pointed at by a pointer. This is useful considering that
+    an ocaml value can point at a closure within a set of closures, and thus point
+    in the middle of an ocaml value (since there is an infix header, the value being
+    pointed to is also an ocaml value, but things are easier to represent this way). *)
 
 
 
@@ -66,7 +70,8 @@ val follow : addr -> pblock
 
 val walk : (pblock -> unit) -> pblock -> unit
 (** Apply the given function to a block, and all the blocks it points to
-    (recursively). *)
+    (recursively). Each block is visited exactly once (the order is left
+    unspecified though). *)
 
 
 (** {2 Creating values} *)
@@ -79,6 +84,6 @@ type context = { mk : 'a. 'a -> [ `Direct ] cell }
 
 val context : (context -> 'a) -> 'a
 (** Allow to use the same context for creating values, i.e.
-    all values creating with [context.mk] will faithfully make use of
-    sharing. *)
+    all values created with [context.mk] will correctly
+    identify shared values between translated values. *)
 
