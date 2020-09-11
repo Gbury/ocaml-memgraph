@@ -11,6 +11,7 @@ homepage: "https://github.com/gbury/ocaml-memgraph"
 bug-reports: "https://github.com/gbury/ocaml-memgraph/issues"
 depends: [
   "dune" {>= "2.7"}
+  "ocaml" {>= "4.05.0"}
   "odoc" {with-doc}
 ]
 build: [
