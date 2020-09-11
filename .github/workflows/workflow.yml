@@ -87,13 +87,13 @@ jobs:
       run: opam install . --deps-only --with-doc --with-test
     # Build the package
     - name: Build the package
-      run: make dune
+      run: opam exec -- make dune
     # Check the doc builds
     - name: Build the doc
-      run: make doc
+      run: opam exec -- make doc
     # Check the examples also build
     - name: Build the examples
-      run: make ex
+      run: opam exec -- make ex
     # Un-pin the local repo to avoid polluting the cache
     - name: Un-pin the local repo
       run: opam pin remove memgraph
