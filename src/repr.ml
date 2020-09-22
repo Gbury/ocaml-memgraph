@@ -34,6 +34,11 @@
     `arity (wordsize - 1 bit) . 1`
     to
     `arity (8 bits) . start-of-environment (wordsize - 9 bits) . 1`
+    Note that the start_of_environment is the field number (reminder:
+    field number start at 0), *relative* to the closure (and not the
+    set of closures, nor the arity field itself, but the closure
+    header (e.g. the code_ptr has offset 0, the arity field has
+    offset 1 in that numerotation)).
     This means different things for the native and bytecode backends:
     - in native mode, the arity field simply changes
     - in bytecode, the arity field was not present, and is now added to
