@@ -80,8 +80,8 @@ jobs:
     - name: Pin the repo
       run: opam pin add memgraph.dev . --no-action
     # Install external deps
-    - name: Install external deps
-      run: opam depext memgraph --yes --with-doc --with-test
+    #- name: Install external deps
+    #  run: opam depext memgraph --yes --with-doc --with-test
     # Install ocaml deps
     - name: Install Ocaml deps
       run: opam install . --deps-only --with-doc --with-test
