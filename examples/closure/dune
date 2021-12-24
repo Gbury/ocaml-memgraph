@@ -1,6 +1,7 @@
 
 (executable
   (name example)
+  (modules example)
   (libraries memgraph)
 )
 
@@ -25,4 +26,34 @@
 (alias
   (name   examples)
   (deps   example.svg)
+)
+
+
+(executable
+  (name doc)
+  (modules doc)
+  (libraries memgraph)
+)
+
+(rule
+  (target  doc.gv)
+  (package memgraph)
+  (action (with-outputs-to %{target}
+           (with-accepted-exit-codes 0
+            (run ./doc.exe))))
+)
+
+(rule
+  (target  doc.svg)
+  (deps    doc.gv)
+  (package memgraph)
+  (mode promote)
+  (action (with-outputs-to %{target}
+           (with-accepted-exit-codes 0
+            (run dot -Tsvg -o %{target} %{deps}))))
+)
+
+(alias
+  (name   examples)
+  (deps   doc.svg)
 )
