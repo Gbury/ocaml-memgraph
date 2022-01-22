@@ -139,11 +139,12 @@ let print_repr cfg h fmt n (_, t) =
 
 let print_roots cfg fmt l =
   let aux fmt l =
+    let n = List.length l in
     List.iteri (fun i (name, t) ->
         Format.fprintf fmt "entry_%d [label=\"{ val : %s | %a}\" shape=\"record\" %a];@\n"
-          i name print_direct_cell t
+          (n-i-1) name print_direct_cell t
           (styles_with_color ~color:cfg.root_node_color) []
-    ) l
+    ) (List.rev l)
 
   in
   Format.fprintf fmt "{rank=source;@\n%a@\n}" aux l
