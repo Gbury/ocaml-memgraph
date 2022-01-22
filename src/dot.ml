@@ -1,3 +1,39 @@
+(* Settings for the graphviz output *)
+
+type config = {
+  external_node_color : string option;
+  block_node_color : string option;
+  root_node_color : string option;
+  outline_color : string;
+  background_color : string option;
+  direction : [`Vertical | `Horizontal];
+}
+
+let config
+  ?(external_node_color = Some "grey")
+  ?(block_node_color = Some "lightblue")
+  ?(root_node_color = Some "yellow")
+  ?(outline_color = "black")
+  ?(background_color = None)
+  ?(direction = `Vertical)
+  ()
+  =
+  { external_node_color;
+    block_node_color;
+    root_node_color;
+    outline_color;
+    background_color;
+    direction;
+  }
+
+let styles_with_color fmt ~color (styles: string list) =
+  match color with
+  | None ->
+    if styles = [] then ()
+    else Format.fprintf fmt "style=\"%s\"" (String.concat ", " styles)
+  | Some color ->
+    Format.fprintf fmt "style=\"%s\" fillcolor=\"%s\""
+      (String.concat ", " ("filled" :: styles)) color
 
 (* External pointers *)
 
@@ -14,11 +50,12 @@ let external_id fmt e =
 let print_external_contents fmt i =
   Format.fprintf fmt "{ <head> Out of heap : 0x%nx }" i
 
-let print_external fmt i =
+let print_external cfg fmt i =
   if not @@ Hashtbl.mem external_cache i then begin
     Format.fprintf fmt
-      "%a [label=\"%a\" shape=\"record\" style=\"rounded, filled\" fillcolor=\"grey\"];@\n"
-      external_id i print_external_contents i;
+      "%a [label=\"%a\" shape=\"record\" %a];@\n"
+      external_id i print_external_contents i
+      (styles_with_color ~color:cfg.external_node_color) ["rounded"]
   end
 
 
@@ -68,7 +105,7 @@ let print_contents fmt t =
     Repr.((t.block.tag :> int))
     print_contents t.Repr.block
 
-let print_edges fmt t =
+let print_edges cfg fmt t =
   match Repr.(t.block.data) with
   | Repr.Abstract | Repr.Block _ -> ()
   | Repr.Fields a ->
@@ -78,46 +115,58 @@ let print_edges fmt t =
         Format.fprintf fmt "%a:f%d -> %a;@\n" node_id t i node_anchor (Repr.follow b)
       | Repr.External e ->
         Format.fprintf fmt "%a:f%d -> %a:<head>;@\n" node_id t i external_id e;
-        print_external fmt e
+        (print_external cfg) fmt e
       | _ -> ()
     done
 
-let print_node h fmt t =
+let print_node cfg h fmt t =
   if not (Hashtbl.mem h Repr.(t.block.addr)) then begin
     Hashtbl.add h Repr.(t.block.addr) true;
     Format.fprintf fmt
-      "%a [label=\"%a\" shape=\"record\" style=\"rounded, filled\" fillcolor=\"lightblue\"];@\n"
-      node_id t print_contents t;
-    print_edges fmt t
+      "%a [label=\"%a\" shape=\"record\" %a];@\n"
+      node_id t print_contents t
+      (styles_with_color ~color:cfg.block_node_color) ["rounded"];
+    (print_edges cfg) fmt t
   end
 
-let print_repr h fmt n (_, t) =
+let print_repr cfg h fmt n (_, t) =
   match t with
   | Repr.Pointer b ->
     let block = Repr.follow b in
     Format.fprintf fmt "entry_%d -> %a;@\n" n node_anchor block;
-    Repr.walk (print_node h fmt) block
+    Repr.walk (print_node cfg h fmt) block
   | _ -> ()
 
-let print_roots fmt l =
+let print_roots cfg fmt l =
   let aux fmt l =
     List.iteri (fun i (name, t) ->
-        Format.fprintf fmt "entry_%d [label=\"{ val : %s | %a}\" shape=\"record\" style=\"filled\" fillcolor=\"yellow\"];@\n"
-          i name print_direct_cell t) l
+        Format.fprintf fmt "entry_%d [label=\"{ val : %s | %a}\" shape=\"record\" %a];@\n"
+          i name print_direct_cell t
+          (styles_with_color ~color:cfg.root_node_color) []
+    ) l
+
   in
   Format.fprintf fmt "{rank=source;@\n%a@\n}" aux l
 
-let print_list fmt l =
+let print_list cfg fmt l =
   clear_external_cache ();
   let print_reprs fmt l =
     let h = Hashtbl.create 42 in
-    List.iteri (print_repr h fmt) l
+    List.iteri (print_repr cfg h fmt) l
   in
-  Format.fprintf fmt "digraph g {@\n%a\n%a\n}@." print_roots l print_reprs l
+  Format.fprintf fmt "digraph g {@\n\
+    graph [bgcolor=%s]\n\
+    edge [color=%s]\n\
+    node [color=%s, fontcolor=%s]\n\
+    rankdir=%s\n\
+    %a\n%a\n}@."
+    (match cfg.background_color with None -> "transparent" | Some c -> c)
+    cfg.outline_color cfg.outline_color cfg.outline_color
+    (match cfg.direction with `Horizontal -> "LR" | `Vertical -> "TB")
+    (print_roots cfg) l print_reprs l
 
-let to_file name l =
+let to_file cfg name l =
   let fd = Unix.openfile name [ Unix.O_CREAT; Unix.O_RDWR; Unix.O_EXCL ] 0o640 in
   let ch = Unix.out_channel_of_descr fd in
   let fmt = Format.formatter_of_out_channel ch in
-  print_list fmt l
-
+  print_list cfg fmt l
