@@ -149,11 +149,11 @@ let print_roots cfg fmt l =
   in
   Format.fprintf fmt "{rank=source;@\n%a@\n}" aux l
 
-let print_list cfg fmt l =
+let print_list ?(conf = config ()) fmt l =
   clear_external_cache ();
   let print_reprs fmt l =
     let h = Hashtbl.create 42 in
-    List.iteri (print_repr cfg h fmt) l
+    List.iteri (print_repr conf h fmt) l
   in
   Format.fprintf fmt "digraph g {@\n\
     graph [bgcolor=%s]\n\
@@ -161,13 +161,13 @@ let print_list cfg fmt l =
     node [color=%s, fontcolor=%s]\n\
     rankdir=%s\n\
     %a\n%a\n}@."
-    (match cfg.background_color with None -> "transparent" | Some c -> c)
-    cfg.outline_color cfg.outline_color cfg.outline_color
-    (match cfg.direction with `Horizontal -> "LR" | `Vertical -> "TB")
-    (print_roots cfg) l print_reprs l
+    (match conf.background_color with None -> "transparent" | Some c -> c)
+    conf.outline_color conf.outline_color conf.outline_color
+    (match conf.direction with `Horizontal -> "LR" | `Vertical -> "TB")
+    (print_roots conf) l print_reprs l
 
-let to_file cfg name l =
+let to_file ?conf name l =
   let fd = Unix.openfile name [ Unix.O_CREAT; Unix.O_RDWR; Unix.O_EXCL ] 0o640 in
   let ch = Unix.out_channel_of_descr fd in
   let fmt = Format.formatter_of_out_channel ch in
-  print_list cfg fmt l
+  print_list ?conf fmt l
