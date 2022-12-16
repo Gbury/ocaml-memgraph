@@ -82,6 +82,7 @@ let print_inline_cell fmt (c : [`Inline] Repr.cell) =
   | Repr.External _ -> Format.fprintf fmt " . "
   | Repr.Double f   -> Format.fprintf fmt "%f" f
   | Repr.Infix      -> Format.fprintf fmt "Infix"
+  | Repr.Closinfo c -> Format.fprintf fmt  "arity:%d / startenv:%d" c.arity c.start_of_env
 
 let print_block_cell fmt (c: [`Block] Repr.cell) =
   match c with
@@ -95,10 +96,14 @@ let print_contents fmt t =
   | Repr.Block c ->
     Format.fprintf fmt "<f0> %a" print_block_cell c
   | Repr.Fields a ->
-    Format.fprintf fmt "<f0> %a" print_inline_cell a.(0);
-    for i = 1 to Array.length a - 1 do
-      Format.fprintf fmt "| <f%d>%a" i print_inline_cell a.(i)
-    done
+    if Array.length a = 0 then begin
+      Format.fprintf fmt ""
+    end else begin
+      Format.fprintf fmt "<f0> %a" print_inline_cell a.(0);
+      for i = 1 to Array.length a - 1 do
+        Format.fprintf fmt "| <f%d>%a" i print_inline_cell a.(i)
+      done
+    end
 
 let print_contents fmt t =
   Format.fprintf fmt "{ <head> Tag : %d | %a }"

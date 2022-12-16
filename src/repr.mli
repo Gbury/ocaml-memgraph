@@ -15,6 +15,13 @@ type tag = private int
 type addr = private int
 (** Abstract addresses, used for sharing *)
 
+type closinfo = {
+  arity : int;
+  start_of_env : int;
+}
+(** Contents of the closure info field, stored for each closure in a
+    set of closures. *)
+
 type block = private {
   addr : addr; (** unique int to preserve sharing *)
   tag  : tag;  (** Block tag *)
@@ -43,6 +50,7 @@ and _ cell =
   | String   : string       -> [< `Block ] cell             (** String *)
   | Double   : float        -> [< `Block | `Inline ] cell   (** A float *)
   | Infix    :                 [ `Inline ] cell             (** An infix header (used in closures) *)
+  | Closinfo : closinfo     -> [< `Inline ] cell            (** Closure info field *)
 (** The actual type of memory cells containing concrete values.
     There are actually three type of cells:
     - [`Direct] cells are values that can be found in ocaml variables

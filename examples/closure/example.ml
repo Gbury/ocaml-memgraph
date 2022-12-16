@@ -25,8 +25,8 @@ let () =
         "g1 = g 5", ctx.mk g1;
         "g2 = g 7", ctx.mk g2;
         "g3 = g1 42", ctx.mk g3;
-        "let rec h x = i x", ctx.mk h;
-        "let rec i y = j y", ctx.mk i;
-        "let rec j z = h z", ctx.mk j;
+        "h x1 x2 x3 = i x1 x2 x3", ctx.mk h;
+        "i y1 y2 y3 = j y1 y2 y3", ctx.mk i;
+        "j z1 z2 z3 = h z1 z2 z3", ctx.mk j;
       ]))
 

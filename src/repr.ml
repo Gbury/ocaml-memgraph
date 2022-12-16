@@ -27,6 +27,14 @@
 
   As far as I know, these changes are:
 
+  * No Naked pointers
+    Introduced in preparation for mutlicore, and the only option starting
+    from ocaml 5.0, no nake dpoitners does not change the representation
+    of blocks, but restricts how we can read blocks if we do not want to
+    produce segfaults at runtime. Particularly, code pointers cannot be
+    read using `Obj.field` because that would result in a naked pointer.
+    Instead, we have to read code pointers as raw_data/nativeints
+
   * Closure representation and env vars (PR#9619)
     Starting from ocaml 4.12, sets of closures now record
     the field number of the start of their environment
@@ -58,6 +66,12 @@ type tag = int
 type addr = int
 (* Abstract addresses, used for sharing *)
 
+type closinfo = {
+  arity : int;
+  start_of_env : int;
+}
+(* info stored in closure info fields of closures *)
+
 type block = {
   addr : addr; (* unique int to preserve sharing *)
   tag  : tag;  (* block tag *)
@@ -70,12 +84,13 @@ and data =
   | Fields of [ `Inline ] cell array (**)
 
 and _ cell =
-  | Int      : int          -> [< `Inline | `Direct ] cell  (* Integers *)
-  | Pointer  : addr         -> [< `Inline | `Direct ] cell  (* Pointers to some block *)
-  | External : Nativeint.t  -> [< `Inline ] cell            (* Out of heap pointer *)
-  | String   : string       -> [< `Block ] cell             (* String *)
-  | Double   : float        -> [< `Block | `Inline ] cell   (* A float *)
-  | Infix    :                 [ `Inline ] cell             (* An infix header (used in closures) *)
+  | Int       : int          -> [< `Inline | `Direct ] cell  (* Integers *)
+  | Pointer   : addr         -> [< `Inline | `Direct ] cell  (* Pointers to some block *)
+  | External  : Nativeint.t  -> [< `Inline ] cell            (* Out of heap pointer *)
+  | String    : string       -> [< `Block ] cell             (* String *)
+  | Double    : float        -> [< `Block | `Inline ] cell   (* A float *)
+  | Infix     :                 [  `Inline ] cell            (* An infix header (used in closures) *)
+  | Closinfo  : closinfo     -> [< `Inline ] cell
 
 type pblock = {
   block   : block;  (* The block being pointed at *)
@@ -188,7 +203,12 @@ let rec mk_val assoc addr v =
             (fun i -> Double (Obj.double_field v i))
         in
         Fields a, assoc
-      else if tag < Obj.no_scan_tag then begin
+      else if tag = Obj.closure_tag then begin
+        (* Out of heap pointers (such as code pointers), must be accessed using
+           [raw_field], to avoid the Gc following them, and thus segfaults. *)
+        let assoc, fields = mk_closure_fields assoc v (Obj.size v) 0 [] in
+        Fields (Array.of_list (List.rev fields)), assoc
+      end else if tag < Obj.no_scan_tag then begin
         (* General case, we parse an array of fields. *)
         let tmp = ref assoc in
         (* Format.eprintf "block size (%d): %d@." tag (Obj.size v); *)
@@ -205,6 +225,54 @@ let rec mk_val assoc addr v =
     let block = mk_block addr tag data in
     Hashtbl.add env.graph addr { block; offset = 0; };
     (v, addr) :: assoc
+  end
+
+and mk_closinfo v offset =
+  let field = Obj.field v offset in
+  assert (Obj.is_int field);
+  let i : int = Obj.obj field in
+  let arity = i lsr (Sys.word_size - 9) in
+  let start_of_env = (i lsl 8) lsr 8 in
+  { arity; start_of_env; }
+
+and mk_closure_fields :
+  assoc -> Obj.t -> int -> int -> [ `Inline ] cell list -> assoc * [ `Inline ] cell list
+  = fun assoc t size offset acc ->
+    if offset >= size then assoc, acc
+    else begin
+      let offset, acc =
+        if offset > 0 then
+          offset + 1, Infix :: acc
+        else offset, acc
+      in
+      let curried_pointer = Obj.raw_field t offset in
+      let closinfo = mk_closinfo t (offset + 1) in
+      let acc =
+        if closinfo.arity = 1 then
+          Closinfo closinfo ::
+          External curried_pointer ::
+          acc
+        else
+          External (Obj.raw_field t (offset + 2)) ::
+          Closinfo closinfo ::
+          External curried_pointer ::
+          acc
+      in
+      let next_offset =
+        if closinfo.arity = 1 then offset + 2 else offset + 3
+      in
+      if (closinfo.arity = 1 && closinfo.start_of_env = 2)
+      || (closinfo.arity > 1 && closinfo.start_of_env = 3) then
+        mk_closure_env assoc t size next_offset acc
+      else
+        mk_closure_fields assoc t size next_offset acc
+    end
+
+and mk_closure_env assoc t size offset acc =
+  if offset >= size then assoc, acc
+  else begin
+    let assoc', v = mk_inline assoc (Obj.field t offset) in
+    mk_closure_env assoc' t size (offset + 1) (v :: acc)
   end
 
 (** Wrapper for inline values. *)
