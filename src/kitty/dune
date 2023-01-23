@@ -1,0 +1,11 @@
+(documentation
+  (package memgraph_kitty)
+)
+
+(library
+  (name         memgraph_kitty)
+  (public_name  memgraph_kitty)
+  (libraries    memgraph kittyimg nanosvg nanosvg_text stb_truetype)
+  (preprocess (pps ppx_blob))
+  (preprocessor_deps FiraSans-Medium.ttf)
+)
