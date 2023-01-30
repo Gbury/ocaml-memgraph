@@ -75,7 +75,7 @@ jobs:
         ocaml-version: ${{ matrix.ocaml-version }}
     # Pin the repo
     - name: Pin the repo
-      run: opam pin add memgraph.dev . --no-action
+      run: opam pin add . --no-action
     # Install external deps
     #- name: Install external deps
     #  run: opam depext memgraph --yes --with-doc --with-test
@@ -93,7 +93,7 @@ jobs:
       run: opam exec -- make ex
     # Un-pin the local repo to avoid polluting the cache
     - name: Un-pin the local repo
-      run: opam pin remove memgraph
+      run: opam pin remove memgraph memgraph_kitty
 
 
     # Update the doc
