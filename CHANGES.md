@@ -1,6 +1,6 @@
 
-1.0
----
+v1.0
+----
 
 First release
 
