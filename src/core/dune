@@ -8,6 +8,5 @@
   (public_name  memgraph)
   (libraries    unix)
   (modules      Repr Dot)
-  (preprocess (action (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
 )
 

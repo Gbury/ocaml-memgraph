@@ -29,6 +29,7 @@
   (name memgraph_kitty)
   (depends
      (ocaml (>= 4.05.0))
+     (memgraph (= :version))
      (ppx_blob (and :build (>= 0.7.0)))
      (nanosvg (>= 0.1))
      (nanosvg_text (>= 0.1))
