@@ -11,7 +11,7 @@ memory graph of ocaml values.
 You can look at the [examples folder](https://github.com/Gbury/ocaml-memgraph/tree/master/examples)
 to see how to use memgraph.
 
-![example](https://github.com/Gbury/ocaml-memgraph/blob/master/examples/list/example.svg)
+![example](https://github.com/Gbury/ocaml-memgraph/blob/master/examples/demo/example.svg)
 
 # Memgraph & Kitty
 
@@ -19,4 +19,4 @@ For users of the [kitty terminal emulator](https://sw.kovidgoyal.net/kitty/), yo
 use the `Memgraph_kitty` package and library to show the memory graph directly in a
 toplevel session (using `ocaml` or `utop` for instance).
 
-
+![kity](https://github.com/Gbury/ocaml-memgraph/blob/master/examples/kitty.png)
