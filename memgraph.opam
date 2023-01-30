@@ -4,8 +4,14 @@ version: "1.0"
 synopsis: "A small library to inspect memory representation of ocaml values"
 description:
   "Memgraph allows one to inspect an ocaml value and get a representation of its layout in memory, and helpers to dump such representation as dot files to easily print them as graphs"
-maintainer: ["Guillaume Bury <guillaume.bury@gmail.com>"]
-authors: ["Guillaume Bury <guillaume.bury@gmail.com>"]
+maintainer: [
+  "Guillaume Bury <guillaume.bury@gmail.com>"
+  "Armaël Guéneau <armael.gueneau@ens-lyon.org>"
+]
+authors: [
+  "Guillaume Bury <guillaume.bury@gmail.com>"
+  "Armaël Guéneau <armael.gueneau@ens-lyon.org>"
+]
 license: "MIT"
 homepage: "https://github.com/gbury/ocaml-memgraph"
 bug-reports: "https://github.com/gbury/ocaml-memgraph/issues"

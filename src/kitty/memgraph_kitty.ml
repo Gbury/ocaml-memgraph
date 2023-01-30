@@ -1,3 +1,5 @@
+(* This file is free software, part of memgraph. See file "LICENSE" for more information *)
+
 let font_blob =
   [%blob "FiraSans-Medium.ttf"]
 
