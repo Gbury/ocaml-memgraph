@@ -5,6 +5,7 @@
 (version 1.0)
 (license MIT)
 (source (github gbury/ocaml-memgraph))
+(documentation https://gbury.github.io/ocaml-memgraph/)
 (authors "Guillaume Bury <guillaume.bury@gmail.com>"
          "Armaël Guéneau <armael.gueneau@ens-lyon.org>")
 (maintainers "Guillaume Bury <guillaume.bury@gmail.com>"
