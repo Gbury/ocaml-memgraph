@@ -5,8 +5,10 @@
 (version 1.0)
 (license MIT)
 (source (github gbury/ocaml-memgraph))
-(authors "Guillaume Bury <guillaume.bury@gmail.com>")
-(maintainers "Guillaume Bury <guillaume.bury@gmail.com>")
+(authors "Guillaume Bury <guillaume.bury@gmail.com>"
+         "Armaël Guéneau <armael.gueneau@ens-lyon.org>")
+(maintainers "Guillaume Bury <guillaume.bury@gmail.com>"
+             "Armaël Guéneau <armael.gueneau@ens-lyon.org>")
 
 ; Project options
 (formatting disabled)
