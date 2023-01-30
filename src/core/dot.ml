@@ -161,9 +161,9 @@ let print_list ?(conf = config ()) fmt l =
     List.iteri (print_repr conf h fmt) l
   in
   Format.fprintf fmt "digraph g {@\n\
-    graph [bgcolor=%s]\n\
-    edge [color=%s]\n\
-    node [color=%s, fontcolor=%s]\n\
+    graph [bgcolor=\"%s\"]\n\
+    edge [color=\"%s\"]\n\
+    node [color=\"%s\", fontcolor=\"%s\"]\n\
     rankdir=%s\n\
     %a\n%a\n}@."
     (match conf.background_color with None -> "transparent" | Some c -> c)
