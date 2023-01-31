@@ -19,7 +19,7 @@
 ; Memgraph package
 (package
   (name memgraph)
-  (depends (ocaml (>= 4.05.0)))
+  (depends (ocaml (>= 4.12.0)))
   (synopsis "A small library to inspect memory representation of ocaml values")
   (description "Memgraph allows one to inspect an ocaml value and get a representation of its layout in memory, and helpers to dump such representation as dot files to easily print them as graphs")
 )
@@ -28,7 +28,7 @@
 (package
   (name memgraph_kitty)
   (depends
-     (ocaml (>= 4.05.0))
+     (ocaml (>= 4.12.0))
      (memgraph (= :version))
      (ppx_blob (and :build (>= 0.7.0)))
      (nanosvg (>= 0.1))

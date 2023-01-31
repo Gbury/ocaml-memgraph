@@ -19,7 +19,7 @@ doc: "https://gbury.github.io/ocaml-memgraph/"
 bug-reports: "https://github.com/gbury/ocaml-memgraph/issues"
 depends: [
   "dune" {>= "2.7"}
-  "ocaml" {>= "4.05.0"}
+  "ocaml" {>= "4.12.0"}
   "memgraph" {= version}
   "ppx_blob" {build & >= "0.7.0"}
   "nanosvg" {>= "0.1"}
