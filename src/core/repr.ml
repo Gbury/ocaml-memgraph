@@ -10,26 +10,26 @@
    only read info in this module, and do not modify anything, but
    still, it is delicate code).
 
-   As far as I know, the current code should work across al versions
+   As far as I know, the current code should work across all versions
    of ocaml, whether it be native or bytecode. Note however that the
    closure representation differs from bytecode to native, so you
    may obtain different results depending on how you run this code.
 
 
    WARNING: if ever some more semantic information wanted to be
-            extracted from ocaml values, great care muist be taken
+            extracted from ocaml values, great care must be taken
             to consider the changes that occurred in the
-            representation of ocaml values. Note: such additions
-            could be made to an additional module, rather than in
-            this code, potentially by adding some hooks/unsafe
-            functions in this module to allow an external module
-            to add this information.
+            representation of ocaml values accross ocaml versions.
+            Note: such additions could be made to an additional
+            module, rather than in this code, potentially by adding
+            some hooks/unsafe functions in this module to allow an
+            external module to add this information.
 
   As far as I know, these changes are:
 
   * No Naked pointers
-    Introduced in preparation for mutlicore, and the only option starting
-    from ocaml 5.0, no nake dpoitners does not change the representation
+    Introduced in preparation for multicore, and the only option starting
+    from ocaml 5.0, no naked pointers does not change the representation
     of blocks, but restricts how we can read blocks if we do not want to
     produce segfaults at runtime. Particularly, code pointers cannot be
     read using `Obj.field` because that would result in a naked pointer.
@@ -170,7 +170,7 @@ let rec mk_val assoc addr v =
   if tag = Obj.infix_tag then
     (* Infix closures are special pointers that actually
        point inside a big closure block, and
-       their size is actually an offset rather than a nnumber of blocks *)
+       their size is actually an offset rather than a number of blocks *)
     let offset = Obj.size v in
     (* Format.eprintf "Infix, offset: %d@." offset; *)
     (* offsets/addresses are in bytes, hence the word_size /8 mutliplication  *)
