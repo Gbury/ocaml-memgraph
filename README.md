@@ -21,6 +21,6 @@ toplevel session (using `ocaml` or `utop` for instance).
 
 ![kitty](https://github.com/Gbury/ocaml-memgraph/blob/master/examples/kitty.png)
 
-WARNING: using this module in a terminal other thank kitty may lead to weird behaviour,
+WARNING: using this module in a terminal other than kitty may lead to weird behaviour,
 such as filling your screen with weird characters.
 
