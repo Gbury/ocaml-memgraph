@@ -162,7 +162,7 @@ let mk_block addr tag data =
     Some important points:
     - we need to keep track of the values that we have already translated,
       in order to not loop on cyclic values, and to faithfully represent
-      sharing. This is donne using an association list.
+      sharing. This is done using an association list.
     - Some tags must be singled out (see comments inside function).
 *)
 let rec mk_val assoc addr v =
@@ -203,12 +203,9 @@ let rec mk_val assoc addr v =
             (fun i -> Double (Obj.double_field v i))
         in
         Fields a, assoc
-      else if tag = Obj.closure_tag then begin
-        (* Out of heap pointers (such as code pointers), must be accessed using
-           [raw_field], to avoid the Gc following them, and thus segfaults. *)
-        let assoc, fields = mk_closure_fields assoc v (Obj.size v) 0 [] in
-        Fields (Array.of_list (List.rev fields)), assoc
-      end else if tag < Obj.no_scan_tag then begin
+      else if tag = Obj.closure_tag then
+        mk_closure v assoc
+      else if tag < Obj.no_scan_tag then begin
         (* General case, we parse an array of fields. *)
         let tmp = ref assoc in
         (* Format.eprintf "block size (%d): %d@." tag (Obj.size v); *)
@@ -226,6 +223,17 @@ let rec mk_val assoc addr v =
     Hashtbl.add env.graph addr { block; offset = 0; };
     (v, addr) :: assoc
   end
+
+and mk_closure v assoc =
+  match Sys.backend_type with
+  | Native | Bytecode ->
+    (* Out of heap pointers (such as code pointers), must be accessed using
+       [raw_field], to avoid the Gc following them and segfault. *)
+    let assoc, fields = mk_closure_fields assoc v (Obj.size v) 0 [] in
+    Fields (Array.of_list (List.rev fields)), assoc
+  | Other _ ->
+    (* Don't attempt to inspect closures on other backends (e.g. js_of_ocaml) *)
+    Abstract, assoc
 
 and mk_closinfo v offset =
   let field = Obj.field v offset in
