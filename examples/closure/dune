@@ -1,4 +1,3 @@
-
 (executable
   (name example)
   (modules example)
@@ -57,3 +56,34 @@
   (name   examples)
   (deps   doc.svg)
 )
+
+(executable
+ (name partial)
+ (modules partial)
+ (libraries memgraph))
+
+(rule
+ (target partial.gv)
+ (package memgraph)
+ (action
+  (with-outputs-to
+   %{target}
+   (with-accepted-exit-codes
+    0
+    (run ./partial.exe)))))
+
+(rule
+ (target partial.svg)
+ (deps partial.gv)
+ (package memgraph)
+ (mode promote)
+ (action
+  (with-outputs-to
+   %{target}
+   (with-accepted-exit-codes
+    0
+    (run dot -Tsvg -o %{target} %{deps})))))
+
+(alias
+ (name examples)
+ (deps partial.svg))
